@@ -1,0 +1,10 @@
+[project]
+name = "chinese-text-anki-analyser"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "jieba>=0.42.1",
+    "pandas>=2.2.3",
+]

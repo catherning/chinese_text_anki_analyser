@@ -80,6 +80,7 @@ def get_unknowns_definition(unknown_words: List[str], hsk_dict: Dict[str, Dict])
 
 
 def build_hsk_dict_from_csv(path: str) -> dict:
+    # TODO: estimate HSK level of any word, as vocab is not exhaustive 
     df = pd.read_csv(path)
     hsk_dict = {}
     for _, row in df.iterrows():
@@ -114,6 +115,7 @@ def test_pipeline_with_sample_text():
 
 def main(text, vocab):
     """Main function to process text and vocabulary."""
+    # TODO: vocab as csv file or hsk level
     hsk_path = "data/hsk_vocabulary.csv"
     hsk_dict = build_hsk_dict_from_csv(hsk_path)
 
@@ -136,6 +138,10 @@ if __name__ == "__main__":
     
     main(
         text="""
-            小狗坐在地上""",
-        vocab=5
+            近日，美国明尼阿波利斯市亨内平县检察官办公室公布对京东CEO刘强东事件的调查结果，决定对刘强东不予起诉，这意味着该案正式结案，刘强东无罪。
+
+事件起因是在美国一个饭局过后，刘强东与女受害人在她的公寓发生性关系，随后，女方向警方报警，称遭到强奸，随后事件在中国社交媒体上发酵。但近日，美国律师放出消息，美警方已经宣布刘强东无罪。
+
+刘强东在中国社交媒体上也做出道歉，称在女受害者房间所发生的事情都是男女自愿行为，虽不构成犯罪，但也对家庭造成了莫大的伤害，将会尽全力对家庭妻子孩子做出弥补。""",
+        vocab=6
     )

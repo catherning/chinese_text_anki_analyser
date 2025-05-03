@@ -3,16 +3,27 @@ revision = 1
 requires-python = ">=3.12"
 
 [[package]]
+name = "chinese-converter"
+version = "1.1.1"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/fd/02/8f7eaa1bcf29b9b088afb01fa727d7539bf1ac31f060a3ebdb3026d5b848/chinese_converter-1.1.1.tar.gz", hash = "sha256:dcb2cb2514dc36e984bf9b0c2fddabbceb9ff9090b7ff57f54ce474263cf5531", size = 188073 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/15/1b/d341406d5b3afc7a6890ad095b3616abe1a4194425dbcc7fb772f1df680b/chinese_converter-1.1.1-py3-none-any.whl", hash = "sha256:47a3dd3bf71080f2abbf1a7cd6efa36d940041b6aa65c92572ebacafd463d03f", size = 190900 },
+]
+
+[[package]]
 name = "chinese-text-anki-analyser"
 version = "0.1.0"
 source = { virtual = "." }
 dependencies = [
+    { name = "chinese-converter" },
     { name = "jieba" },
     { name = "pandas" },
 ]
 
 [package.metadata]
 requires-dist = [
+    { name = "chinese-converter", specifier = ">=1.1.1" },
     { name = "jieba", specifier = ">=0.42.1" },
     { name = "pandas", specifier = ">=2.2.3" },
 ]

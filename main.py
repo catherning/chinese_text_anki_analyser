@@ -3,6 +3,9 @@ from collections import Counter
 from typing import Union, List, Dict
 import pandas as pd
 import string
+# import opencc
+import chinese_converter
+import re
 
 def load_vocab(vocab: Union[str, int], hsk_dict: Dict[str, Dict]) -> set:
     """Load known vocabulary from CSV or HSK level."""
@@ -20,8 +23,23 @@ def load_vocab(vocab: Union[str, int], hsk_dict: Dict[str, Dict]) -> set:
 chinese_punct = "，。！？；：「」、『』（）【】《》〈〉——……“”‘’·"
 all_punct = set(string.punctuation + chinese_punct)
 
-def tokenize_without_punctuation(text: str) -> list:
-    return [word for word in jieba.cut(text) if word.strip() and word not in all_punct]
+def preprocess_text(text: str,hsk_dict) -> list:
+        
+    latin_re = re.compile(r'[A-Za-z0-9]')
+    text= chinese_converter.to_simplified(text)
+
+    tokens = []
+    for word in jieba.cut(text):
+        word = word.strip()
+        if not word or word in all_punct or latin_re.search(word):
+            continue
+        # si le mot complet est connu ou non chinois, garde tel quel
+        if word in hsk_dict or not all('\u4e00' <= char <= '\u9fff' for char in word):
+            tokens.append(word)
+        else:
+            # sinon découpe caractère par caractère
+            tokens.extend(list(word))
+    return tokens
 
 def get_unknown_words(vocab: Union[str, int], words: list, hsk_dict: Dict[str, Dict]) -> tuple[list[str], float]:
     known_vocab = load_vocab(vocab, hsk_dict)
@@ -52,7 +70,7 @@ def estimate_hsk_level(words: list, hsk_dict: Dict[str, Dict]) -> int:
     return 7
 
 
-def generate_output(unknown_words: List[str], hsk_dict: Dict[str, Dict]) -> List[Dict[str, str]]:
+def get_unknowns_definition(unknown_words: List[str], hsk_dict: Dict[str, Dict]) -> List[Dict[str, str]]:
     output = []
     for word in set(unknown_words):
         definition = hsk_dict.get(word, {}).get("definition", "N/A")
@@ -82,11 +100,11 @@ def test_pipeline_with_sample_text():
     # Expected unknown words (based on simulated jieba output)
     expected_unknown = {'安排', '研究', '解决'}
     
-    words = tokenize_without_punctuation(sample_text)
+    words = preprocess_text(sample_text,hsk_dict)
 
     unknowns,coverage = get_unknown_words(vocab, words, hsk_dict)
     hsk_level = estimate_hsk_level(words, hsk_dict)
-    output = generate_output(list(unknowns), hsk_dict)
+    output = get_unknowns_definition(list(unknowns), hsk_dict)
 
     assert hsk_level == 4, "Expected HSK 7 words in the distribution"
     # assert unknowns == expected_unknown, f"Expected {expected_unknown}, got {unknowns}"
@@ -98,12 +116,12 @@ def main(text, vocab):
     """Main function to process text and vocabulary."""
     hsk_path = "data/hsk_vocabulary.csv"
     hsk_dict = build_hsk_dict_from_csv(hsk_path)
-    
-    words = tokenize_without_punctuation(text)
+
+    words = preprocess_text(text,hsk_dict)
     
     unknown_words, coverage = get_unknown_words(vocab, words, hsk_dict)
     hsk_level = estimate_hsk_level(words, hsk_dict)
-    output = generate_output(unknown_words, hsk_dict)
+    output = get_unknowns_definition(unknown_words, hsk_dict)
 
     print(f"Unknown words: {unknown_words}")
     print(f"Coverage: {coverage}%")
@@ -112,10 +130,12 @@ def main(text, vocab):
 
 # Run the test
 
+# test_pipeline_with_sample_text()
+
 if __name__ == "__main__":
-    test_pipeline_with_sample_text()
     
     main(
-        text="我是学生，老师安排我们研究问题并解决。我是法国人，我会说法语。",
-        vocab=3
+        text="""
+            小狗坐在地上""",
+        vocab=5
     )

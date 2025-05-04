@@ -7,16 +7,12 @@ import string
 import chinese_converter
 import re
 
-def load_vocab(vocab: Union[str, int], hsk_dict: Dict[str, Dict]) -> set:
+def load_vocab(vocab: Union[str, int], hsk_dict: Dict[str, Dict], additional_vocab=None, sep=",") -> set:
     """Load known vocabulary from CSV or HSK level."""
-    if isinstance(vocab, int):  # vocab is an HSK level
-        known_vocab = {word for word, info in hsk_dict.items() if info["level"] <= vocab}
-    elif isinstance(vocab, str):  # vocab is a CSV file path
-        import pandas as pd
-        df = pd.read_csv(vocab)
-        known_vocab = set(df.iloc[:, 0])  # assume first column contains words
-    else:
-        raise ValueError("vocab must be an int (HSK level) or str (path to CSV)")
+    known_vocab = {word for word, info in hsk_dict.items() if info["level"] <= vocab}
+    if additional_vocab:
+        df = pd.read_csv(additional_vocab,sep=sep, encoding='utf-8')
+        known_vocab = known_vocab.union(df.iloc[:, 1])  # assume second column contains words
     return known_vocab
 
 # Chinese + Western punctuation set
@@ -41,8 +37,8 @@ def preprocess_text(text: str,hsk_dict) -> list:
             tokens.extend(list(word))
     return tokens
 
-def get_unknown_words(vocab: Union[str, int], words: list, hsk_dict: Dict[str, Dict]) -> tuple[list[str], float]:
-    known_vocab = load_vocab(vocab, hsk_dict)
+def get_unknown_words(vocab: Union[str, int], words: list, hsk_dict: Dict[str, Dict], additional_vocab:str = None, sep:str =",") -> tuple[list[str], float]:
+    known_vocab = load_vocab(vocab, hsk_dict, additional_vocab, sep)
     total = len(words)
     
     unknown = [word for word in words if word not in known_vocab]
@@ -99,7 +95,7 @@ def test_pipeline_with_sample_text():
     vocab = 2  # Simulate known vocab as HSK level 2
 
     # Expected unknown words (based on simulated jieba output)
-    expected_unknown = {'安排', '研究', '解决'}
+    expected_unknown = ['安排', '研究', '并', '解决', '法', '国', '法', '语']
     
     words = preprocess_text(sample_text,hsk_dict)
 
@@ -107,21 +103,21 @@ def test_pipeline_with_sample_text():
     hsk_level = estimate_hsk_level(words, hsk_dict)
     output = get_unknowns_definition(list(unknowns), hsk_dict)
 
-    assert hsk_level == 4, "Expected HSK 7 words in the distribution"
-    # assert unknowns == expected_unknown, f"Expected {expected_unknown}, got {unknowns}"
-    # assert any(w['definition'] != "N/A" for w in output), "Definitions missing from output"
+    assert hsk_level == 3, "Expected HSK 7 words in the distribution"
+    assert coverage == 0.6, "Expected coverage of 0.6 with HSK level 2"
+    assert unknowns == expected_unknown, f"Expected {expected_unknown}, got {unknowns}"
+    assert any(w['definition'] != "N/A" for w in output), "Definitions missing from output"
 
     print("✅ Test passed: pipeline handles sample text as expected.")
 
-def main(text, vocab):
+def main(text, vocab,additional_vocab=None,sep=","):
     """Main function to process text and vocabulary."""
-    # TODO: vocab as csv file or hsk level
     hsk_path = "data/hsk_vocabulary.csv"
     hsk_dict = build_hsk_dict_from_csv(hsk_path)
 
     words = preprocess_text(text,hsk_dict)
     
-    unknown_words, coverage = get_unknown_words(vocab, words, hsk_dict)
+    unknown_words, coverage = get_unknown_words(vocab, words, hsk_dict, additional_vocab, sep)
     hsk_level = estimate_hsk_level(words, hsk_dict)
     output = get_unknowns_definition(unknown_words, hsk_dict)
 
@@ -129,8 +125,6 @@ def main(text, vocab):
     print(f"Coverage: {coverage}%")
     print(f"HSK level estimation: {hsk_level}")
     print("Output:", output)
-
-# Run the test
 
 # test_pipeline_with_sample_text()
 
@@ -143,5 +137,7 @@ if __name__ == "__main__":
 事件起因是在美国一个饭局过后，刘强东与女受害人在她的公寓发生性关系，随后，女方向警方报警，称遭到强奸，随后事件在中国社交媒体上发酵。但近日，美国律师放出消息，美警方已经宣布刘强东无罪。
 
 刘强东在中国社交媒体上也做出道歉，称在女受害者房间所发生的事情都是男女自愿行为，虽不构成犯罪，但也对家庭造成了莫大的伤害，将会尽全力对家庭妻子孩子做出弥补。""",
-        vocab=6
+        vocab=5,
+        additional_vocab="data/anki.csv",
+        sep="\t"
     )

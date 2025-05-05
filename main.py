@@ -3,9 +3,11 @@ from collections import Counter
 from typing import Union, List, Dict
 import pandas as pd
 import string
-# import opencc
 import chinese_converter
 import re
+from davia import Davia, run_server
+
+app = Davia()
 
 def load_vocab(vocab: Union[str, int], hsk_dict: Dict[str, Dict], additional_vocab=None, sep=",") -> set:
     """Load known vocabulary from CSV or HSK level."""
@@ -110,8 +112,21 @@ def test_pipeline_with_sample_text():
 
     print("✅ Test passed: pipeline handles sample text as expected.")
 
-def main(text, vocab,additional_vocab=None,sep=","):
-    """Main function to process text and vocabulary."""
+@app.task
+def main(text:str, vocab:int,additional_vocab:str=None,sep:str=","):
+    """Pipeline to process Chinese text and analyze vocabulary coverage by user HSK level
+
+    Args:
+        text (str): Text to analyze
+        vocab (int): HSK level of known vocabulary
+        additional_vocab (str, optional): path to csv file containing the known vocabulary of the user, in addition to the HSK level. Defaults to None.
+        sep (str, optional): separator of the csv file. Defaults to ",".
+
+    Returns:
+        coverage (float): Coverage of known words in the text in percentage 
+        hsk_level : Estimated HSK level of the text
+        output : List of unknown words with their definition and HSK level
+    """    
     hsk_path = "data/hsk_vocabulary.csv"
     hsk_dict = build_hsk_dict_from_csv(hsk_path)
 
@@ -125,19 +140,26 @@ def main(text, vocab,additional_vocab=None,sep=","):
     print(f"Coverage: {coverage}%")
     print(f"HSK level estimation: {hsk_level}")
     print("Output:", output)
+    return {
+        "coverage": coverage,
+        "hsk_level": hsk_level,
+        "output": output
+    }
 
 # test_pipeline_with_sample_text()
 
 if __name__ == "__main__":
     
-    main(
-        text="""
-            近日，美国明尼阿波利斯市亨内平县检察官办公室公布对京东CEO刘强东事件的调查结果，决定对刘强东不予起诉，这意味着该案正式结案，刘强东无罪。
+#     main(
+#         text="""
+#             近日，美国明尼阿波利斯市亨内平县检察官办公室公布对京东CEO刘强东事件的调查结果，决定对刘强东不予起诉，这意味着该案正式结案，刘强东无罪。
 
-事件起因是在美国一个饭局过后，刘强东与女受害人在她的公寓发生性关系，随后，女方向警方报警，称遭到强奸，随后事件在中国社交媒体上发酵。但近日，美国律师放出消息，美警方已经宣布刘强东无罪。
+# 事件起因是在美国一个饭局过后，刘强东与女受害人在她的公寓发生性关系，随后，女方向警方报警，称遭到强奸，随后事件在中国社交媒体上发酵。但近日，美国律师放出消息，美警方已经宣布刘强东无罪。
 
-刘强东在中国社交媒体上也做出道歉，称在女受害者房间所发生的事情都是男女自愿行为，虽不构成犯罪，但也对家庭造成了莫大的伤害，将会尽全力对家庭妻子孩子做出弥补。""",
-        vocab=5,
-        additional_vocab="data/anki.csv",
-        sep="\t"
-    )
+# 刘强东在中国社交媒体上也做出道歉，称在女受害者房间所发生的事情都是男女自愿行为，虽不构成犯罪，但也对家庭造成了莫大的伤害，将会尽全力对家庭妻子孩子做出弥补。""",
+#         vocab=5,
+#         additional_vocab="data/anki.csv",
+#         sep="\t"
+#     )
+
+    run_server(app)

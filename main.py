@@ -5,8 +5,10 @@ import pandas as pd
 import string
 import chinese_converter
 import re
-from davia import Davia, run_server
-
+from typing import Optional
+from davia import Davia
+from fastapi import UploadFile
+import pymupdf
 app = Davia()
 
 def load_vocab(vocab: Union[str, int], hsk_dict: Dict[str, Dict], additional_vocab=None, sep=",",position_word=2) -> set:
@@ -109,8 +111,23 @@ def test_pipeline_with_sample_text():
 
     print("✅ Test passed: pipeline handles sample text as expected.")
 
+# def read_uploaded_file(file: UploadFile) -> str:
+#     """
+#     This function reads the uploaded file and returns the text.
+#     """
+#     tempfile = file.file
+#     pdf_bytes = tempfile.read() # des bytes
+#     doc = pymupdf.open(stream=pdf_bytes, filetype="pdf")  # open a document
+#     text = ""
+#     for page in doc:  # iterate the document pages
+#         text += page.get_text()  # get plain text encoded as UTF-8
+#     return text
+# # tester de mettre direct uploadfile dans main, car les autres objets sont simples
+
+# pour deploy : pip freeze dans main branch
+
 @app.task
-def main(text:str, vocab:int, additional_vocab:str=None, sep:str=",",position_word=2):
+def main(text:str, vocab:int, file: Optional[UploadFile]=None, additional_vocab:str=None, sep:str=",",position_word=2):
     """Pipeline to process Chinese text and analyze vocabulary coverage by user HSK level
 
     Args:
@@ -124,6 +141,15 @@ def main(text:str, vocab:int, additional_vocab:str=None, sep:str=",",position_wo
         hsk_level : Estimated HSK level of the text
         output : List of unknown words with their definition and HSK level
     """
+    if file:
+        tempfile = file.file
+        pdf_bytes = tempfile.read() # des bytes
+        doc = pymupdf.open(stream=pdf_bytes, filetype="pdf")  # open a document
+        text = ""
+        for page in doc:  # iterate the document pages
+            text += page.get_text()  # get plain text encoded as UTF-8
+        print(text)
+    
     # Get full known vocab
     hsk_path = "data/hsk_vocabulary.csv"
     hsk_dict = build_hsk_dict_from_csv(hsk_path)
@@ -151,32 +177,32 @@ def main(text:str, vocab:int, additional_vocab:str=None, sep:str=",",position_wo
 if __name__ == "__main__":
     # test_pipeline_with_sample_text()
     
-    main(
-        text="""
-        健康饮食的小对话
+#     main(
+#         text="""
+#         健康饮食的小对话
 
-小明: 小红，你知道吗？最近我开始注重健康饮食了。
+# 小明: 小红，你知道吗？最近我开始注重健康饮食了。
 
-小红: 真的吗？那你都吃些什么？
+# 小红: 真的吗？那你都吃些什么？
 
-小明: 我尽量多吃蔬菜水果，还有一些健康的蛋白质，比如鱼和鸡肉。
+# 小明: 我尽量多吃蔬菜水果，还有一些健康的蛋白质，比如鱼和鸡肉。
 
-小红: 听起来很不错啊！我也想吃得更健康，但不知道从哪里开始。
+# 小红: 听起来很不错啊！我也想吃得更健康，但不知道从哪里开始。
 
-小明: 没关系，我们可以一起制定一个健康饮食计划。你可以从减少糖分和油脂开始，增加蔬菜和全谷类食品的摄入。
+# 小明: 没关系，我们可以一起制定一个健康饮食计划。你可以从减少糖分和油脂开始，增加蔬菜和全谷类食品的摄入。
 
-小红: 那听起来很有挑战性，但我愿意尝试。你有什么好的食谱推荐吗？
+# 小红: 那听起来很有挑战性，但我愿意尝试。你有什么好的食谱推荐吗？
 
-小明: 我可以分享一些简单又健康的食谱给你，比如水煮蔬菜和烤鸡胸肉。我们还可以一起去市场购买新鲜的食材。
+# 小明: 我可以分享一些简单又健康的食谱给你，比如水煮蔬菜和烤鸡胸肉。我们还可以一起去市场购买新鲜的食材。
 
-小红: 太好了！我期待我们一起迈向更健康的生活方式
-""",
-        vocab=1,
-        # additional_vocab="data/anki_chinese.csv",
-        sep="\t"
-    )
+# 小红: 太好了！我期待我们一起迈向更健康的生活方式
+# """,
+#         vocab=1,
+#         # additional_vocab="data/anki_chinese.csv",
+#         sep="\t"
+#     )
 
 #             近日，美国明尼阿波利斯市亨内平县检察官办公室公布对京东CEO刘强东事件的调查结果，决定对刘强东不予起诉，这意味着该案正式结案，刘强东无罪。
 # 事件起因是在美国一个饭局过后，刘强东与女受害人在她的公寓发生性关系，随后，女方向警方报警，称遭到强奸，随后事件在中国社交媒体上发酵。但近日，美国律师放出消息，美警方已经宣布刘强东无罪。
 # 刘强东在中国社交媒体上也做出道歉，称在女受害者房间所发生的事情都是男女自愿行为，虽不构成犯罪，但也对家庭造成了莫大的伤害，将会尽全力对家庭妻子孩子做出弥补。
-    run_server(app)
+    app.run()

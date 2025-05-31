@@ -8,14 +8,19 @@ import re
 from typing import Optional
 from davia import Davia
 from fastapi import UploadFile
-import pymupdf
+import io
 app = Davia()
 
 def load_vocab(vocab: Union[str, int], hsk_dict: Dict[str, Dict], additional_vocab=None, sep=",",position_word=2) -> set:
     """Load known vocabulary from CSV or HSK level."""
     known_vocab = {word for word, info in hsk_dict.items() if info["level"] <= vocab}
     if  additional_vocab:
-        df = pd.read_csv(additional_vocab,sep=sep, encoding='utf-8')
+        if type(additional_vocab)==str:
+            df = pd.read_csv(additional_vocab,sep=sep, encoding='utf-8')
+        else:
+            tempfile = additional_vocab.file
+            bytes = tempfile.read()
+            df = pd.read_csv(io.StringIO(bytes.decode('utf-8')),sep="\\")
         known_vocab = known_vocab.union(df.iloc[:, position_word-1])  # assume second column contains words
         
     # Add the single characters of each word, if count >= 2 
@@ -111,18 +116,6 @@ def test_pipeline_with_sample_text():
 
     print("✅ Test passed: pipeline handles sample text as expected.")
 
-# def read_uploaded_file(file: UploadFile) -> str:
-#     """
-#     This function reads the uploaded file and returns the text.
-#     """
-#     tempfile = file.file
-#     pdf_bytes = tempfile.read() # des bytes
-#     doc = pymupdf.open(stream=pdf_bytes, filetype="pdf")  # open a document
-#     text = ""
-#     for page in doc:  # iterate the document pages
-#         text += page.get_text()  # get plain text encoded as UTF-8
-#     return text
-# # tester de mettre direct uploadfile dans main, car les autres objets sont simples
 
 # pour deploy : pip freeze dans main branch
 
@@ -142,13 +135,7 @@ def main(text:str, vocab:int, file: Optional[UploadFile]=None, additional_vocab:
         output : List of unknown words with their definition and HSK level
     """
     if file:
-        tempfile = file.file
-        pdf_bytes = tempfile.read() # des bytes
-        doc = pymupdf.open(stream=pdf_bytes, filetype="pdf")  # open a document
-        text = ""
-        for page in doc:  # iterate the document pages
-            text += page.get_text()  # get plain text encoded as UTF-8
-        print(text)
+        additional_vocab = file
     
     # Get full known vocab
     hsk_path = "data/hsk_vocabulary.csv"

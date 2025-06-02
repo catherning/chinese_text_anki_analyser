@@ -11,10 +11,16 @@ from fastapi import UploadFile
 import io
 app = Davia()
 
-def load_vocab(vocab: Union[str, int], hsk_dict: Dict[str, Dict], additional_vocab=None, sep=",",position_word=2) -> set:
+# TODO: use https://pypi.org/project/hanzipy/ for unknown words, also get their def
+# get and show unknown pinyin
+# TODO: ? evaluate text level using HSK grammar structures https://languageplayer.io/en/zh/grammar/ ? How to without using LLM ? Ask LLM about that
+
+# davia: debug endpoint doesn't work even if app works
+
+def load_vocab(vocab: Union[str, int], hsk_dict: Dict[str, Dict], additional_vocab=None, sep=",",position_word=2,user_known_words:set=None) -> set:
     """Load known vocabulary from CSV or HSK level."""
     known_vocab = {word for word, info in hsk_dict.items() if info["level"] <= vocab}
-    if  additional_vocab:
+    if additional_vocab:
         if type(additional_vocab)==str:
             df = pd.read_csv(additional_vocab,sep=sep, encoding='utf-8')
         else:
@@ -22,6 +28,9 @@ def load_vocab(vocab: Union[str, int], hsk_dict: Dict[str, Dict], additional_voc
             bytes = tempfile.read()
             df = pd.read_csv(io.StringIO(bytes.decode('utf-8')),sep="\\")
         known_vocab = known_vocab.union(df.iloc[:, position_word-1])  # assume second column contains words
+        
+    if user_known_words:
+        known_vocab = known_vocab.union(user_known_words)
         
     # Add the single characters of each word, if count >= 2 
     counter_char = Counter([char for word in known_vocab if type(word)==str for char in word])
@@ -33,7 +42,7 @@ def load_vocab(vocab: Union[str, int], hsk_dict: Dict[str, Dict], additional_voc
 chinese_punct = "，。！？；：「」、『』（）【】《》〈〉——……“”‘’·"
 all_punct = set(string.punctuation + chinese_punct)
 
-def preprocess_text(text: str,hsk_dict) -> list:
+def preprocess_text(text: str) -> list:
         
     latin_re = re.compile(r'[A-Za-z0-9]')
     text= chinese_converter.to_simplified(text)
@@ -79,9 +88,11 @@ def estimate_hsk_level(words: list, hsk_dict: Dict[str, Dict]) -> int:
 def get_unknowns_definition(unknown_words: List[str], hsk_dict: Dict[str, Dict]) -> List[Dict[str, str]]:
     output = []
     for word in set(unknown_words):
-        definition = hsk_dict.get(word, {}).get("definition", "N/A")
-        level = hsk_dict.get(word, {}).get("level", "N/A")
-        output.append({"word": word, "level": level, "definition": definition})
+        hsk_word_info = hsk_dict.get(word, {})
+        definition = hsk_word_info.get("definition", "N/A")
+        level = hsk_word_info.get("level", "N/A")
+        pinyin = hsk_word_info.get("pinyin", "N/A")
+        output.append({"word": word, "level": level, "definition": definition,"pinyin":pinyin})
     return sorted(output, key=lambda x: x['level'] if isinstance(x['level'], int) else 99)
 
 
@@ -93,7 +104,8 @@ def build_hsk_dict_from_csv(path: str) -> dict:
         word = row['word']
         hsk_dict[word] = {
             "level": int(row['level']),
-            "definition": row['definition']
+            "definition": row['definition'],
+            "pinyin": row['pinyin']
         }
     return hsk_dict
 
@@ -107,7 +119,7 @@ def test_pipeline_with_sample_text():
     # Expected unknown words (based on simulated jieba output)
     expected_unknown = ['安排', '研究', '并', '解决', '法', '国', '法', '语']
     
-    res = main(sample_text, vocab = vocab)
+    res = text_analyser_main(sample_text, vocab = vocab)
 
     assert res["hsk_level"] == 3, "Expected HSK 7 words in the distribution"
     assert res["coverage"] == 0.6, "Expected coverage of 0.6 with HSK level 2"
@@ -117,10 +129,19 @@ def test_pipeline_with_sample_text():
     print("✅ Test passed: pipeline handles sample text as expected.")
 
 
+
+
 # pour deploy : pip freeze dans main branch
 
 @app.task
-def main(text:str, vocab:int, file: Optional[UploadFile]=None, additional_vocab:str=None, sep:str=",",position_word=2):
+def text_analyser_main(text:str,
+     vocab:int,
+     file: Optional[UploadFile]=None,
+     additional_vocab:str=None,
+     sep:str=",",
+     position_word:int=2,
+     user_known_words: str = None
+     ):
     """Pipeline to process Chinese text and analyze vocabulary coverage by user HSK level
 
     Args:
@@ -128,6 +149,8 @@ def main(text:str, vocab:int, file: Optional[UploadFile]=None, additional_vocab:
         vocab (int): HSK level of known vocabulary
         additional_vocab (str, optional): path to csv file containing the known vocabulary of the user, in addition to the HSK level. Defaults to None.
         sep (str, optional): separator of the csv file. Defaults to ",".
+        position_word: column index (starting from 1) where's there's the chinese word, in the uploaded file or additional_vocab
+        known_words (str, optional): list of known words given by the front, clicked by the user from the first list of unknown words. It's a list of words separated by a comma. Defaults to None.
 
     Returns:
         coverage (float): Coverage of known words in the text in percentage 
@@ -140,9 +163,14 @@ def main(text:str, vocab:int, file: Optional[UploadFile]=None, additional_vocab:
     # Get full known vocab
     hsk_path = "data/hsk_vocabulary.csv"
     hsk_dict = build_hsk_dict_from_csv(hsk_path)
-    known_vocab = load_vocab(vocab, hsk_dict, additional_vocab, sep,position_word)
+    
+    # user_known_words = set()
+    if user_known_words:
+        user_known_words = set(user_known_words.split(","))
+    
+    known_vocab = load_vocab(vocab, hsk_dict, additional_vocab, sep,position_word,user_known_words)
 
-    text_processed = preprocess_text(text,hsk_dict)
+    text_processed = preprocess_text(text)
     
     # Analyze text
     hsk_level = estimate_hsk_level(text_processed, hsk_dict)    

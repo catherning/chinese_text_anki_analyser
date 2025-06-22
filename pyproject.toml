@@ -7,6 +7,8 @@ requires-python = ">=3.12"
 dependencies = [
     "chinese-converter>=1.1.1",
     "davia>=0.1.13",
+    "hanzipy>=1.0.4",
     "jieba>=0.42.1",
     "pandas>=2.2.3",
+    "pypinyin>=0.54.0",
 ]

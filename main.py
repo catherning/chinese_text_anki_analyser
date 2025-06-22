@@ -1,21 +1,20 @@
-import jieba
 from collections import Counter
 from typing import Union, List, Dict
 import pandas as pd
 import string
-import chinese_converter
 import re
 from typing import Optional
+import jieba
+import chinese_converter
+from pypinyin import pinyin
+from hanzipy.dictionary import HanziDictionary
 from davia import Davia
 from fastapi import UploadFile
 import io
+
 app = Davia()
-
-# TODO: use https://pypi.org/project/hanzipy/ for unknown words, also get their def
-# get and show unknown pinyin
+dictionary = HanziDictionary()
 # TODO: ? evaluate text level using HSK grammar structures https://languageplayer.io/en/zh/grammar/ ? How to without using LLM ? Ask LLM about that
-
-# davia: debug endpoint doesn't work even if app works
 
 def load_vocab(vocab: Union[str, int], hsk_dict: Dict[str, Dict], additional_vocab=None, sep=",",position_word=2,user_known_words:set=None) -> set:
     """Load known vocabulary from CSV or HSK level."""
@@ -88,11 +87,20 @@ def estimate_hsk_level(words: list, hsk_dict: Dict[str, Dict]) -> int:
 def get_unknowns_definition(unknown_words: List[str], hsk_dict: Dict[str, Dict]) -> List[Dict[str, str]]:
     output = []
     for word in set(unknown_words):
-        hsk_word_info = hsk_dict.get(word, {})
+        try:
+            hsk_word_info = hsk_dict[word]
+        except KeyError:
+            try:
+                hsk_word_info = dictionary.definition_lookup(word, "simplified")[0] 
+                hsk_word_info["pinyin"] = "".join([w[0] for w in pinyin(word)])
+                # TODO: get_character_in_frequency_list_by_position to estimate HSK level
+            except KeyError:
+                hsk_word_info = {}
+            
         definition = hsk_word_info.get("definition", "N/A")
+        word_pinyin = hsk_word_info.get("pinyin", "N/A").replace(" ","")
         level = hsk_word_info.get("level", "N/A")
-        pinyin = hsk_word_info.get("pinyin", "N/A")
-        output.append({"word": word, "level": level, "definition": definition,"pinyin":pinyin})
+        output.append({"word": word, "level": level, "definition": definition,"pinyin":word_pinyin}) # TODO:  split word as list of char and pinyin as list of pinyin ?
     return sorted(output, key=lambda x: x['level'] if isinstance(x['level'], int) else 99)
 
 

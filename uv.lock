@@ -53,16 +53,20 @@ source = { virtual = "." }
 dependencies = [
     { name = "chinese-converter" },
     { name = "davia" },
+    { name = "hanzipy" },
     { name = "jieba" },
     { name = "pandas" },
+    { name = "pypinyin" },
 ]
 
 [package.metadata]
 requires-dist = [
     { name = "chinese-converter", specifier = ">=1.1.1" },
     { name = "davia", specifier = ">=0.1.13" },
+    { name = "hanzipy", specifier = ">=1.0.4" },
     { name = "jieba", specifier = ">=0.42.1" },
     { name = "pandas", specifier = ">=2.2.3" },
+    { name = "pypinyin", specifier = ">=0.54.0" },
 ]
 
 [[package]]
@@ -172,6 +176,12 @@ sdist = { url = "https://files.pythonhosted.org/packages/01/ee/02a2c011bdab74c6f
 wheels = [
     { url = "https://files.pythonhosted.org/packages/04/4b/29cac41a4d98d144bf5f6d33995617b185d14b22401f75ca86f384e87ff1/h11-0.16.0-py3-none-any.whl", hash = "sha256:63cf8bbe7522de3bf65932fda1d9c2772064ffb3dae62d55932da54b31cb6c86", size = 37515 },
 ]
+
+[[package]]
+name = "hanzipy"
+version = "1.0.4"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/05/38/fd9f35a4cc8a0f515e0588251bdcc354aa49724c759cfa571ad111d2af40/hanzipy-1.0.4.tar.gz", hash = "sha256:95713a887695e8f3f053e5b8593e845f457c5aeed35cf04d726c7f5acb104227", size = 7686832 }
 
 [[package]]
 name = "httpcore"
@@ -445,6 +455,15 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/7c/2d/c3338d48ea6cc0feb8446d8e6937e1408088a72a39937982cc6111d17f84/pygments-2.19.1.tar.gz", hash = "sha256:61c16d2a8576dc0649d9f39e089b5f02bcd27fba10d8fb4dcc28173f7a45151f", size = 4968581 }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/8a/0b/9fcc47d19c48b59121088dd6da2488a49d5f72dacf8262e2790a1d2c7d15/pygments-2.19.1-py3-none-any.whl", hash = "sha256:9ea1544ad55cecf4b8242fab6dd35a93bbce657034b0611ee383099054ab6d8c", size = 1225293 },
+]
+
+[[package]]
+name = "pypinyin"
+version = "0.54.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/c9/7f/81cb5416ddacfeccca8eeedcd3543a72b093b26d9c4ca7bde8beea733e4e/pypinyin-0.54.0.tar.gz", hash = "sha256:9ab0d07ff51d191529e22134a60e109d0526d80b7a80afa73da4c89521610958", size = 837455 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/b6/ec/2c04ac863e7a85bb68b0b655cec2f19853d51d305ce3d785848db6037b8d/pypinyin-0.54.0-py2.py3-none-any.whl", hash = "sha256:5f776f19b9fd922e4121a114810b22048d90e6e8037fb1c07f4c40f987ae6e7a", size = 837012 },
 ]
 
 [[package]]

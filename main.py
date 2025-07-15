@@ -92,15 +92,15 @@ def get_unknowns_definition(unknown_words: List[str], hsk_dict: Dict[str, Dict])
         except KeyError:
             try:
                 hsk_word_info = dictionary.definition_lookup(word, "simplified")[0] 
-                hsk_word_info["pinyin"] = "".join([w[0] for w in pinyin(word)])
+                hsk_word_info["pinyin"] = " ".join([w[0] for w in pinyin(word)])
                 # TODO: get_character_in_frequency_list_by_position to estimate HSK level
             except KeyError:
                 hsk_word_info = {}
             
         definition = hsk_word_info.get("definition", "N/A")
-        word_pinyin = hsk_word_info.get("pinyin", "N/A").replace(" ","")
+        word_pinyin = hsk_word_info.get("pinyin", "N/A").split(" ")
         level = hsk_word_info.get("level", "N/A")
-        output.append({"word": word, "level": level, "definition": definition,"pinyin":word_pinyin}) # TODO:  split word as list of char and pinyin as list of pinyin ?
+        output.append({"word": [el for el in word], "level": level, "definition": definition,"pinyin":word_pinyin}) # TODO:  split word as list of char and pinyin as list of pinyin ?
     return sorted(output, key=lambda x: x['level'] if isinstance(x['level'], int) else 99)
 
 
@@ -200,30 +200,30 @@ def text_analyser_main(text:str,
 if __name__ == "__main__":
     # test_pipeline_with_sample_text()
     
-#     main(
-#         text="""
-#         健康饮食的小对话
+    # text_analyser_main(
+    #     text="""
+    #     健康饮食的小对话
 
-# 小明: 小红，你知道吗？最近我开始注重健康饮食了。
+    # 小明: 小红，你知道吗？最近我开始注重健康饮食了。
 
-# 小红: 真的吗？那你都吃些什么？
+    # 小红: 真的吗？那你都吃些什么？
 
-# 小明: 我尽量多吃蔬菜水果，还有一些健康的蛋白质，比如鱼和鸡肉。
+    # 小明: 我尽量多吃蔬菜水果，还有一些健康的蛋白质，比如鱼和鸡肉。
 
-# 小红: 听起来很不错啊！我也想吃得更健康，但不知道从哪里开始。
+    # 小红: 听起来很不错啊！我也想吃得更健康，但不知道从哪里开始。
 
-# 小明: 没关系，我们可以一起制定一个健康饮食计划。你可以从减少糖分和油脂开始，增加蔬菜和全谷类食品的摄入。
+    # 小明: 没关系，我们可以一起制定一个健康饮食计划。你可以从减少糖分和油脂开始，增加蔬菜和全谷类食品的摄入。
 
-# 小红: 那听起来很有挑战性，但我愿意尝试。你有什么好的食谱推荐吗？
+    # 小红: 那听起来很有挑战性，但我愿意尝试。你有什么好的食谱推荐吗？
 
-# 小明: 我可以分享一些简单又健康的食谱给你，比如水煮蔬菜和烤鸡胸肉。我们还可以一起去市场购买新鲜的食材。
+    # 小明: 我可以分享一些简单又健康的食谱给你，比如水煮蔬菜和烤鸡胸肉。我们还可以一起去市场购买新鲜的食材。
 
-# 小红: 太好了！我期待我们一起迈向更健康的生活方式
-# """,
-#         vocab=1,
-#         # additional_vocab="data/anki_chinese.csv",
-#         sep="\t"
-#     )
+    # 小红: 太好了！我期待我们一起迈向更健康的生活方式
+    # """,
+    #     vocab=1,
+    #     # additional_vocab="data/anki_chinese.csv",
+    #     sep="\t"
+    # )
 
 #             近日，美国明尼阿波利斯市亨内平县检察官办公室公布对京东CEO刘强东事件的调查结果，决定对刘强东不予起诉，这意味着该案正式结案，刘强东无罪。
 # 事件起因是在美国一个饭局过后，刘强东与女受害人在她的公寓发生性关系，随后，女方向警方报警，称遭到强奸，随后事件在中国社交媒体上发酵。但近日，美国律师放出消息，美警方已经宣布刘强东无罪。
